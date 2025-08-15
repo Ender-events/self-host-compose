@@ -1,0 +1,28 @@
+services:
+  kuma:
+    image: louislam/uptime-kuma:1.23.16-alpine
+    restart: always
+    volumes:
+      - app-persistent-storage:/app/data
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=reverse-proxy_traefik"
+      - "traefik.http.routers.kuma.rule=Host(`kuma.localhost`)"
+      - "traefik.http.routers.kuma.entrypoints=websecure"
+      - "traefik.http.routers.kuma.tls.certresolver=myresolver"
+      - "traefik.http.services.kuma.loadbalancer.server.port=3001"
+      - "traefik.http.middlewares.kuma.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.kuma.redirectscheme.permanent=true"
+    expose:
+      - 3001
+
+volumes:
+  app-persistent-storage:
+
+networks:
+  traefik:
+    name: reverse-proxy_traefik
+    external: true

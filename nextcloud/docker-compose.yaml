@@ -1,0 +1,133 @@
+services:
+  # Note: PostgreSQL is an external service. You can find more information about the configuration here:
+  # https://hub.docker.com/_/postgres
+  postgres:
+    # Note: Check the recommend version here: https://docs.nextcloud.com/server/latest/admin_manual/installation/system_requirements.html#server
+    image: postgres:alpine
+    restart: always
+    volumes:
+      - db-postgres:/var/lib/postgresql/data:Z
+    env_file:
+      - db.env
+
+  # Note: Redis is an external service. You can find more information about the configuration here:
+  # https://hub.docker.com/_/redis
+  redis:
+    image: redis:alpine
+    restart: always
+
+  app:
+    image: nextcloud:31.0.8-fpm
+    restart: always
+    volumes:
+      - app-persistent-storage:/var/www/html:z
+      # NOTE: The `volumes` config of the `cron` and `app` containers must match
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - NEXTCLOUD_UPDATE=1
+    env_file:
+      - db.env
+    depends_on:
+      - postgres
+      - redis
+
+  # Note: Nginx is an external service. You can find more information about the configuration here:
+  # https://hub.docker.com/_/nginx/
+  web:
+    image: nginx:1.27.5-alpine
+    restart: always
+    volumes:
+      # https://docs.nextcloud.com/server/latest/admin_manual/installation/nginx.html
+      - nginx-conf:/etc/nginx/:ro # nginx.conf
+      # NOTE: The `volumes` included below should match those of the `app` container (unless you know what you're doing)
+      - app-persistent-storage:/var/www/html:z,ro
+    depends_on:
+      - app
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=reverse-proxy_traefik"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.localhost`)"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.tls.certresolver=myresolver"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.nextcloud.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.nextcloud.redirectscheme.permanent=true"
+    expose:
+      - 80
+
+  nextcloud_cron:
+    image: nextcloud:31.0.8-fpm
+    restart: always
+    volumes:
+      - app-persistent-storage:/var/www/html:z
+      # NOTE: The `volumes` config of the `cron` and `app` containers must match
+    entrypoint: /cron.sh
+    depends_on:
+      - postgres
+      - redis
+
+  # restore:
+  #   image: enderevents/self-host-restore:3.22.1-2
+  #   volumes:
+  #     - app-persistent-storage:/mnt/nextcloud
+  #   depends_on:
+  #     - postgres
+  #   environment:
+  #     - PGHOST=postgres
+  #     - PGPORT=5432
+  #     env_file:
+  #       - backup.env
+
+
+  backup:
+    image: ghcr.io/ender-events/self-host-backup:main
+    volumes:
+      - app-persistent-storage:/mnt/nextcloud
+    depends_on:
+      - app
+      - postgres
+    labels:
+      - "cron.schedule=4 5 * * *"
+    environment:
+      - PGHOST=postgres
+      - PGPORT=5432
+    env_file:
+      - backup.env
+
+  cron:
+    image: jaci/cron-label:latest
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/etc/localtime:/etc/localtime:ro"
+
+  collabora:
+    image: collabora/code:24.04.13.3.1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=reverse-proxy_traefik"
+      - "traefik.http.routers.collabora.rule=Host(`collabora.localhost`)"
+      - "traefik.http.routers.collabora.entrypoints=websecure"
+      - "traefik.http.routers.collabora.tls.certresolver=myresolver"
+      - "traefik.http.services.collabora.loadbalancer.server.port=9980"
+      - "traefik.http.middlewares.collabora.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.collabora.redirectscheme.permanent=true"
+    environment:
+      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
+    env_file:
+      - collabora.env
+    expose:
+      - 9980
+
+volumes:
+  nginx-conf:
+  db-postgres:
+  app-persistent-storage:
+
+networks:
+  traefik:
+    name: reverse-proxy_traefik
+    external: true
