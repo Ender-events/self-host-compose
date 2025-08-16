@@ -105,7 +105,10 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
 
   collabora:
-    image: collabora/code:24.04.13.3.1
+    image: collabora/code:25.04.4.2.1
+    restart: always
+    networks:
+      - traefik
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=reverse-proxy_traefik"
