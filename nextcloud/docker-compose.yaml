@@ -3,7 +3,7 @@ services:
   # https://hub.docker.com/_/postgres
   postgres:
     # Note: Check the recommend version here: https://docs.nextcloud.com/server/latest/admin_manual/installation/system_requirements.html#server
-    image: postgres:alpine
+    image: postgres:17.6-alpine
     restart: always
     volumes:
       - db-postgres:/var/lib/postgresql/data:Z
@@ -13,11 +13,11 @@ services:
   # Note: Redis is an external service. You can find more information about the configuration here:
   # https://hub.docker.com/_/redis
   redis:
-    image: redis:alpine
+    image: redis:8.2.2-alpine
     restart: always
 
   app:
-    image: nextcloud:31.0.8-fpm
+    image: nextcloud:31.0.10-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -35,7 +35,7 @@ services:
   # Note: Nginx is an external service. You can find more information about the configuration here:
   # https://hub.docker.com/_/nginx/
   web:
-    image: nginx:1.27.5-alpine
+    image: nginx:1.29.2-alpine
     restart: always
     volumes:
       # https://docs.nextcloud.com/server/latest/admin_manual/installation/nginx.html
@@ -60,7 +60,7 @@ services:
       - 80
 
   nextcloud_cron:
-    image: nextcloud:31.0.8-fpm
+    image: nextcloud:31.0.10-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -105,7 +105,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
 
   collabora:
-    image: collabora/code:25.04.4.2.1
+    image: collabora/code:25.04.6.2.1
     restart: always
     networks:
       - traefik
