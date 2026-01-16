@@ -17,7 +17,7 @@ services:
     restart: always
 
   app:
-    image: nextcloud:32.0.3-fpm
+    image: nextcloud:32.0.4-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -60,7 +60,7 @@ services:
       - 80
 
   nextcloud_cron:
-    image: nextcloud:32.0.3-fpm
+    image: nextcloud:32.0.4-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -105,7 +105,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
 
   collabora:
-    image: collabora/code:25.04.7.3.1
+    image: collabora/code:25.04.8.1.1
     restart: always
     networks:
       - traefik
