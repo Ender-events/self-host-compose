@@ -1,6 +1,6 @@
 services:
   kuma:
-    image: louislam/uptime-kuma:2.0.2
+    image: louislam/uptime-kuma:2.1.0
     restart: always
     volumes:
       - app-persistent-storage:/app/data

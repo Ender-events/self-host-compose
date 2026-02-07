@@ -17,7 +17,7 @@ services:
     restart: always
 
   app:
-    image: nextcloud:32.0.4-fpm
+    image: nextcloud:32.0.5-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -60,7 +60,7 @@ services:
       - 80
 
   nextcloud_cron:
-    image: nextcloud:32.0.4-fpm
+    image: nextcloud:32.0.5-fpm
     restart: always
     volumes:
       - app-persistent-storage:/var/www/html:z
@@ -90,19 +90,31 @@ services:
     depends_on:
       - app
       - postgres
-    labels:
-      - "cron.schedule=4 5 * * *"
     environment:
       - PGHOST=postgres
       - PGPORT=5432
-    env_file:
-      - backup.env
+      # env_file:
+      #   - backup.env
+      - AWS_ACCESS_KEY_ID=MP7VPE716ILKDBU2BR55
+      - "AWS_SECRET_ACCESS_KEY=18sBjuZvedQtFYybH1wFF7yxN08fSIRmp7TIyfrM"
+      - PGDATABASE=nextcloud
+      - PGUSER=oc_grand_manitou
+      - PGPASSWORD=1a3rxrywnma7tznhtjtbhl16xc2a4w
+      - RESTIC_PASSWORD=aNeZ5&CZa3LTphZkA$^%24TEkNTKpXi6
+      - RESTIC_REPOSITORY=s3:https://s3.fr1.next.ink/lisez-next
+      - "POST_HOOK_URL=https://kuma.spreadnet.fr/api/push/pqtJh854yH?msg=OK&ping=$${elapsed}"
 
   cron:
-    image: jaci/cron-label:latest
+    image: mcuadros/ofelia:latest
+    depends_on:
+      - backup
+    command: daemon --docker
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/etc/localtime:/etc/localtime:ro"
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-run.backup.schedule: "4 5 * * *"
+      ofelia.job-run.backup.container: backup
 
   collabora:
     image: collabora/code:25.04.8.1.1
